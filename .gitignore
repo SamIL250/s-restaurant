@@ -1,0 +1,25 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*~
+
+# PHP / logs
+*.log
+error_log
+admin/src/services/**/error_log
+
+# Environment & secrets (never commit credentials)
+.env
+.env.*
+!.env.example
+
+# Uploaded files
+admin/src/services/menu/uploads/*
+!admin/src/services/menu/uploads/.htaccess
+
+# Local XAMPP / temp
+*.tmp
+*.bak

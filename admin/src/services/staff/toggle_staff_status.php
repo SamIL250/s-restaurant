@@ -1,0 +1,30 @@
+<?php
+require_once '../../../config/config.php';
+header('Content-Type: application/json');
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    echo json_encode(['success' => false, 'message' => 'Invalid request method.']);
+    exit;
+}
+
+$user_id = intval($_POST['user_id'] ?? 0);
+if ($user_id <= 0) {
+    echo json_encode(['success' => false, 'message' => 'User ID is required.']);
+    exit;
+}
+
+// Prevent deactivating self
+if ($user_id == $_SESSION['user_id'] ?? 0) {
+    echo json_encode(['success' => false, 'message' => 'You cannot deactivate your own account.']);
+    exit;
+}
+
+$stmt = $conn->prepare('UPDATE users SET is_active = NOT is_active WHERE user_id = ?');
+$stmt->bind_param('i', $user_id);
+if ($stmt->execute()) {
+    echo json_encode(['success' => true, 'message' => 'Staff status updated successfully.']);
+} else {
+    echo json_encode(['success' => false, 'message' => 'Failed to update staff status.']);
+}
+$stmt->close();
+$conn->close(); 

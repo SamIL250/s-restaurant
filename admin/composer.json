@@ -1,0 +1,23 @@
+{
+    "name": "tacos/restaurant-stock",
+    "description": "Restaurant Stock Management System",
+    "type": "project",
+    "require": {
+        "php": ">=7.4",
+        "dompdf/dompdf": "*",
+        "firebase/php-jwt": "^6.11",
+        "phpmailer/phpmailer": "^6.10",
+        "phpoffice/phpspreadsheet": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "Tacos\\": "src/"
+        }
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "sort-packages": true
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

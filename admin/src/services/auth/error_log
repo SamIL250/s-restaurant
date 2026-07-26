@@ -1,0 +1,4 @@
+[04-Feb-2026 16:57:06 UTC] PHP Warning:  Undefined array key "email" in /home/tacorjha/controll.tacosrestaurant.rw/src/services/auth/signin.php on line 20
+[04-Feb-2026 16:57:06 UTC] PHP Warning:  Undefined array key "password" in /home/tacorjha/controll.tacosrestaurant.rw/src/services/auth/signin.php on line 21
+[07-Feb-2026 00:43:34 UTC] PHP Warning:  Undefined array key "email" in /home/tacorjha/controll.tacosrestaurant.rw/src/services/auth/signin.php on line 20
+[07-Feb-2026 00:43:34 UTC] PHP Warning:  Undefined array key "password" in /home/tacorjha/controll.tacosrestaurant.rw/src/services/auth/signin.php on line 21

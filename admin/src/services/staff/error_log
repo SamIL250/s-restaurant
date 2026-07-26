@@ -1,0 +1,32 @@
+[04-Feb-2026 16:58:34 UTC] Staff Update POST Data: Array
+(
+    [user_id] => 4
+    [first_name] => Janeeee
+    [last_name] => Anette
+    [username] => stocker
+    [email] => stock@tacos.com
+    [role] => stock_clerk
+    [phone] => 0798874411
+    [password] => 
+)
+
+[04-Feb-2026 16:58:34 UTC] Staff validation - staff_id: 4 (<=0: false)
+[04-Feb-2026 16:58:34 UTC] Staff validation - first_name: 'Janeeee' (empty: false)
+[04-Feb-2026 16:58:34 UTC] Staff validation - last_name: 'Anette' (empty: false)
+[04-Feb-2026 16:58:34 UTC] Staff validation - username: 'stocker' (empty: false)
+[04-Feb-2026 16:58:34 UTC] Staff validation - email: 'stock@tacos.com' (empty: false)
+[04-Feb-2026 16:58:34 UTC] Staff validation - role: 'stock_clerk' (empty: false)
+[04-Feb-2026 16:58:34 UTC] Update query: UPDATE users SET first_name = ?, last_name = ?, username = ?, email = ?, phone = ?, role = ?, is_active = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ? AND deleted_at IS NULL
+[04-Feb-2026 16:58:34 UTC] Update parameters: Array
+(
+    [0] => Janeeee
+    [1] => Anette
+    [2] => stocker
+    [3] => stock@tacos.com
+    [4] => 0798874411
+    [5] => stock_clerk
+    [6] => 0
+    [7] => 4
+)
+
+[04-Feb-2026 16:58:34 UTC] Parameter types: ssssssii
