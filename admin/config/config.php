@@ -35,4 +35,11 @@ mysqli_set_charset($conn, 'utf8');
 if (mysqli_connect_error()) {
   die('Database connection failed: ' . mysqli_connect_error());
 }
+
+if (!defined('ADMIN_WEB_PATH')) {
+  $documentRoot = rtrim(str_replace('\\', '/', $_SERVER['DOCUMENT_ROOT'] ?? ''), '/');
+  $adminRoot = str_replace('\\', '/', dirname(__DIR__));
+  $webPath = $documentRoot !== '' ? substr($adminRoot, strlen($documentRoot)) : '/admin';
+  define('ADMIN_WEB_PATH', $webPath === '' ? '/admin' : $webPath);
+}
  
