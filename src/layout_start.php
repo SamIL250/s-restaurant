@@ -1,4 +1,11 @@
-<?php include './config/connection.php'; ?>
+<?php
+include './config/connection.php';
+include './config/app.php';
+require_once dirname(__DIR__) . '/services/auth/CustomerSession.php';
+CustomerSession::start();
+$currentCustomer = CustomerSession::user();
+$pageBodyClass = $pageBodyClass ?? 'index-page';
+?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -30,10 +37,11 @@
 
 </head>
 
-<body class="index-page">
+<body class="<?php echo htmlspecialchars($pageBodyClass, ENT_QUOTES, 'UTF-8'); ?>">
+  <script>window.SITE_BASE = '<?php echo SITE_WEB_PATH; ?>';</script>
 
   <!-- //navbar -->
-  <?php include 'components/navbar.php'; ?>
+  <?php include __DIR__ . '/components/navbar.php'; ?>
 
   
 

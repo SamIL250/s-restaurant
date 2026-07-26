@@ -1,5 +1,7 @@
 <?php
 require_once '../../config/connection.php';
+require_once '../../config/app.php';
+require_once __DIR__ . '/../notifications/OrderNotifier.php';
 
 class OrderService {
     private $conn;
@@ -7,54 +9,35 @@ class OrderService {
     public function __construct() {
         global $conn;
         $this->conn = $conn;
-        
+
         if (!$this->conn) {
-            throw new Exception("Database connection not established. Please check your database configuration and ensure the database server is running.");
+            throw new Exception('Database connection not established.');
         }
     }
 
-    public function createOrder($data) {
+    public function createOrder(array $data): array
+    {
         try {
-            // Start transaction
             mysqli_begin_transaction($this->conn);
 
-            // Generate order number
             $orderNumber = $this->generateOrderNumber();
-            
-            // Calculate totals
-            $subtotal = 0;
-            $items = [];
-            
-            if (isset($data['menu_item_id']) && is_array($data['menu_item_id'])) {
-                foreach ($data['menu_item_id'] as $index => $menuItemId) {
-                    $quantity = isset($data['quantity'][$index]) ? intval($data['quantity'][$index]) : 1;
-                    $unitPrice = isset($data['unit_price'][$index]) ? floatval($data['unit_price'][$index]) : 0;
-                    
-                    $items[] = [
-                        'menu_item_id' => intval($menuItemId),
-                        'quantity' => $quantity,
-                        'unit_price' => $unitPrice,
-                        'total_price' => $quantity * $unitPrice
-                    ];
-                    
-                    $subtotal += $quantity * $unitPrice;
-                }
-            }
-            
-            $taxAmount = $subtotal * 0.10; // 10% tax
-            $deliveryFee = ($data['order_type'] === 'delivery') ? 5.00 : 0.00;
+            $items = $this->buildItems($data);
+            $subtotal = array_sum(array_column($items, 'total_price'));
+            $taxAmount = $subtotal * ORDER_TAX_RATE;
+            $deliveryFee = ($data['order_type'] === 'delivery') ? ORDER_DELIVERY_FEE : 0.00;
             $totalAmount = $subtotal + $taxAmount + $deliveryFee;
-            
-            // Insert order
-            $query = "INSERT INTO orders (order_number, order_type, order_status, payment_status, payment_method, subtotal, tax_amount, discount_amount, total_amount, delivery_address, delivery_fee, special_instructions) 
-                      VALUES (?, ?, 'pending', 'pending', 'cash', ?, ?, 0.00, ?, ?, ?, ?)";
-            
+
             $orderType = $data['order_type'];
-            $deliveryAddress = ($orderType === 'delivery' && isset($data['delivery_address'])) ? $data['delivery_address'] : null;
-            $specialInstructions = isset($data['special_instructions']) ? $data['special_instructions'] : null;
-            
+            $deliveryAddress = ($orderType === 'delivery' && !empty($data['delivery_address'])) ? $data['delivery_address'] : null;
+            $specialInstructions = $data['special_instructions'] ?? null;
+
+            $query = "INSERT INTO orders (order_number, order_type, order_status, payment_status, payment_method, subtotal, tax_amount, discount_amount, total_amount, delivery_address, delivery_fee, special_instructions)
+                      VALUES (?, ?, 'pending', 'pending', 'cash', ?, ?, 0.00, ?, ?, ?, ?)";
+
             $stmt = mysqli_prepare($this->conn, $query);
-            mysqli_stmt_bind_param($stmt, 'ssddddss', 
+            mysqli_stmt_bind_param(
+                $stmt,
+                'ssddddss',
                 $orderNumber,
                 $orderType,
                 $subtotal,
@@ -64,17 +47,17 @@ class OrderService {
                 $deliveryFee,
                 $specialInstructions
             );
-            
             mysqli_stmt_execute($stmt);
             $orderId = mysqli_insert_id($this->conn);
             mysqli_stmt_close($stmt);
 
-            // Insert order items
             foreach ($items as $item) {
-                $itemQuery = "INSERT INTO order_items (order_id, menu_item_id, quantity, unit_price, total_price, item_status) 
+                $itemQuery = "INSERT INTO order_items (order_id, menu_item_id, quantity, unit_price, total_price, item_status)
                              VALUES (?, ?, ?, ?, ?, 'pending')";
                 $itemStmt = mysqli_prepare($this->conn, $itemQuery);
-                mysqli_stmt_bind_param($itemStmt, 'iiidd', 
+                mysqli_stmt_bind_param(
+                    $itemStmt,
+                    'iiidd',
                     $orderId,
                     $item['menu_item_id'],
                     $item['quantity'],
@@ -85,12 +68,9 @@ class OrderService {
                 mysqli_stmt_close($itemStmt);
             }
 
-            // Create or get customer
-            $customerId = $this->getOrCreateCustomer($data);
-            
-            // Update order with customer_id
+            $customerId = $this->resolveCustomerId($data);
             if ($customerId) {
-                $updateQuery = "UPDATE orders SET customer_id = ? WHERE order_id = ?";
+                $updateQuery = 'UPDATE orders SET customer_id = ? WHERE order_id = ?';
                 $updateStmt = mysqli_prepare($this->conn, $updateQuery);
                 mysqli_stmt_bind_param($updateStmt, 'ii', $customerId, $orderId);
                 mysqli_stmt_execute($updateStmt);
@@ -99,81 +79,128 @@ class OrderService {
 
             mysqli_commit($this->conn);
 
+            $customer = [
+                'name' => $data['name'],
+                'email' => $data['email'],
+                'phone' => $data['phone'],
+            ];
+
+            $order = [
+                'order_id' => $orderId,
+                'order_number' => $orderNumber,
+                'order_type' => $orderType,
+                'total_amount' => $totalAmount,
+                'delivery_address' => $deliveryAddress,
+                'special_instructions' => $specialInstructions,
+            ];
+
+            $notificationItems = array_map(static function (array $item): array {
+                return [
+                    'name' => $item['item_name'],
+                    'quantity' => $item['quantity'],
+                    'unit_price' => $item['unit_price'],
+                    'total_price' => $item['total_price'],
+                ];
+            }, $items);
+
+            $notifications = OrderNotifier::notify($order, $customer, $notificationItems);
+
             return [
                 'success' => true,
                 'order_id' => $orderId,
                 'order_number' => $orderNumber,
-                'message' => 'Order placed successfully! Order #' . $orderNumber
+                'message' => 'Order placed successfully! Order #' . $orderNumber,
+                'whatsapp_url' => $notifications['whatsapp_url'],
+                'email_sent' => $notifications['email_sent'],
             ];
-
         } catch (Exception $e) {
             mysqli_rollback($this->conn);
             return [
                 'success' => false,
-                'message' => 'Error creating order: ' . $e->getMessage()
+                'message' => 'Error creating order: ' . $e->getMessage(),
             ];
         }
     }
 
-    public function getAvailableMenuItems() {
-        try {
-            $query = "SELECT menu_item_id, item_name, price, description, image_url FROM menu_items WHERE is_available = 1 ORDER BY category_id, item_name";
-            $result = mysqli_query($this->conn, $query);
-            
-            if ($result) {
-                $menuItems = [];
-                while ($row = mysqli_fetch_assoc($result)) {
-                    $menuItems[] = $row;
-                }
-                return $menuItems;
-            }
-            return [];
-        } catch (Exception $e) {
-            return [];
+    private function buildItems(array $data): array
+    {
+        $items = [];
+
+        if (!isset($data['menu_item_id']) || !is_array($data['menu_item_id'])) {
+            return $items;
         }
+
+        foreach ($data['menu_item_id'] as $index => $menuItemId) {
+            $quantity = isset($data['quantity'][$index]) ? (int) $data['quantity'][$index] : 1;
+            $unitPrice = isset($data['unit_price'][$index]) ? (float) $data['unit_price'][$index] : 0.0;
+            $itemName = $data['item_name'][$index] ?? 'Menu item';
+
+            $items[] = [
+                'menu_item_id' => (int) $menuItemId,
+                'item_name' => $itemName,
+                'quantity' => $quantity,
+                'unit_price' => $unitPrice,
+                'total_price' => $quantity * $unitPrice,
+            ];
+        }
+
+        return $items;
     }
 
-    private function generateOrderNumber() {
-        $prefix = 'ORD';
-        $date = date('Ymd');
-        $random = str_pad(rand(0, 9999), 4, '0', STR_PAD_LEFT);
-        return $prefix . $date . $random;
+    private function generateOrderNumber(): string
+    {
+        return 'ORD' . date('Ymd') . str_pad((string) random_int(0, 9999), 4, '0', STR_PAD_LEFT);
     }
 
-    private function getOrCreateCustomer($data) {
-        try {
-            // Check if customer exists by email
-            $email = $data['email'];
-            $query = "SELECT customer_id FROM customers WHERE email = ? AND deleted_at IS NULL LIMIT 1";
-            $stmt = mysqli_prepare($this->conn, $query);
-            mysqli_stmt_bind_param($stmt, 's', $email);
-            mysqli_stmt_execute($stmt);
-            $result = mysqli_stmt_get_result($stmt);
-            
-            if ($row = mysqli_fetch_assoc($result)) {
-                mysqli_stmt_close($stmt);
-                return $row['customer_id'];
-            }
-            mysqli_stmt_close($stmt);
-            
-            // Create new customer
-            $nameParts = explode(' ', $data['name'], 2);
-            $firstName = $nameParts[0];
-            $lastName = isset($nameParts[1]) ? $nameParts[1] : '';
-            
-            $insertQuery = "INSERT INTO customers (first_name, last_name, email, phone) VALUES (?, ?, ?, ?)";
-            $insertStmt = mysqli_prepare($this->conn, $insertQuery);
-            mysqli_stmt_bind_param($insertStmt, 'ssss', $firstName, $lastName, $email, $data['phone']);
-            mysqli_stmt_execute($insertStmt);
-            $customerId = mysqli_insert_id($this->conn);
-            mysqli_stmt_close($insertStmt);
-            
-            return $customerId;
-        } catch (Exception $e) {
-            error_log("Error creating/getting customer: " . $e->getMessage());
+    private function resolveCustomerId(array $data): ?int
+    {
+        if (!empty($data['customer_id'])) {
+            return (int) $data['customer_id'];
+        }
+
+        $email = $data['email'] ?? '';
+        if ($email === '') {
             return null;
         }
+
+        $query = 'SELECT customer_id FROM customers WHERE email = ? AND deleted_at IS NULL LIMIT 1';
+        $stmt = mysqli_prepare($this->conn, $query);
+        mysqli_stmt_bind_param($stmt, 's', $email);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+
+        if ($row = mysqli_fetch_assoc($result)) {
+            mysqli_stmt_close($stmt);
+            $this->updateCustomerContact((int) $row['customer_id'], $data);
+            return (int) $row['customer_id'];
+        }
+        mysqli_stmt_close($stmt);
+
+        $nameParts = explode(' ', trim($data['name']), 2);
+        $firstName = $nameParts[0];
+        $lastName = $nameParts[1] ?? '';
+
+        $insertQuery = 'INSERT INTO customers (first_name, last_name, email, phone, account_status) VALUES (?, ?, ?, ?, \'guest\')';
+        $insertStmt = mysqli_prepare($this->conn, $insertQuery);
+        mysqli_stmt_bind_param($insertStmt, 'ssss', $firstName, $lastName, $email, $data['phone']);
+        mysqli_stmt_execute($insertStmt);
+        $customerId = mysqli_insert_id($this->conn);
+        mysqli_stmt_close($insertStmt);
+
+        return (int) $customerId;
+    }
+
+    private function updateCustomerContact(int $customerId, array $data): void
+    {
+        $nameParts = explode(' ', trim($data['name']), 2);
+        $firstName = $nameParts[0];
+        $lastName = $nameParts[1] ?? '';
+
+        $stmt = mysqli_prepare($this->conn, 'UPDATE customers SET first_name = ?, last_name = ?, phone = ?, updated_at = CURRENT_TIMESTAMP WHERE customer_id = ?');
+        mysqli_stmt_bind_param($stmt, 'sssi', $firstName, $lastName, $data['phone'], $customerId);
+        mysqli_stmt_execute($stmt);
+        mysqli_stmt_close($stmt);
     }
 }
-?>
 
+?>

@@ -65,7 +65,7 @@
                     $description = htmlspecialchars($item['description'] ?? 'Delicious item prepared with care');
                     $price = number_format($item['price'], 2);
                     
-                    echo '<div class="col-lg-6 menu-item isotope-item ' . $category_filter . '">';
+                    echo '<div class="col-lg-6 menu-item isotope-item ' . $category_filter . '" data-menu-item-id="' . (int) $item['menu_item_id'] . '">';
                     echo '<img src="' . $image_path . '" class="menu-img" alt="' . $item_name . '">';
                     echo '<div class="menu-content">';
                     echo '<a href="#">' . $item_name . '</a><span>Frw ' . $price . '</span>';
@@ -74,6 +74,7 @@
                     echo $description;
                     echo '</div>';
                     echo '<div class="menu-order">';
+                    echo '<button type="button" class="btn-favorite" data-menu-id="' . (int) $item['menu_item_id'] . '" onclick="toggleFavorite(' . (int) $item['menu_item_id'] . ', this)" title="Save to favorites"><i class="bi bi-heart"></i></button>';
                     echo '<button class="btn-order" onclick="addToCart(' . $item['menu_item_id'] . ', \'' . addslashes($item_name) . '\', ' . $item['price'] . ', \'' . addslashes($image_path) . '\')">Add to Cart</button>';
                     echo '</div>';
                     echo '</div><!-- Menu Item -->';
@@ -140,24 +141,34 @@
                     </div>
                 </div>
                 <form id="orderForm">
-                    <div class="form-row">
+                    <div class="form-row" id="guestCheckoutFields">
                         <div class="form-group">
                             <label for="customer_name">Full Name *</label>
-                            <input type="text" id="customer_name" name="customer_name" required>
+                            <input type="text" id="customer_name" name="customer_name">
                         </div>
                         <div class="form-group">
                             <label for="customer_phone">Phone *</label>
-                            <input type="tel" id="customer_phone" name="customer_phone" placeholder="0788123456" required>
+                            <input type="tel" id="customer_phone" name="customer_phone" placeholder="0788123456">
                         </div>
                     </div>
-                    <div class="form-row">
+                    <div class="form-row" id="guestEmailRow">
                         <div class="form-group">
                             <label for="customer_email">Email *</label>
-                            <input type="email" id="customer_email" name="customer_email" required>
+                            <input type="email" id="customer_email" name="customer_email">
                         </div>
                         <div class="form-group">
                             <label for="order_type">Order Type</label>
                             <select id="order_type" name="order_type">
+                                <option value="takeaway">Takeaway</option>
+                                <option value="dine_in">Dine In</option>
+                                <option value="delivery">Delivery</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row logged-in-order-type" id="loggedInOrderTypeRow" style="display:none;">
+                        <div class="form-group full-width">
+                            <label for="order_type_logged_in">Order Type</label>
+                            <select id="order_type_logged_in" name="order_type_logged_in">
                                 <option value="takeaway">Takeaway</option>
                                 <option value="dine_in">Dine In</option>
                                 <option value="delivery">Delivery</option>
@@ -170,15 +181,8 @@
                             <input type="text" id="delivery_address" name="delivery_address" placeholder="Enter your delivery address">
                         </div>
                     </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="payment_method">Payment Method</label>
-                            <select id="payment_method" name="payment_method">
-                                <option value="cash">Cash</option>
-                                <option value="mobile">Mobile Money</option>
-                                <option value="card">Card</option>
-                            </select>
-                        </div>
+                    <div class="alert alert-light border mb-3">
+                        No online payment required. After placing your order, confirm it with us on WhatsApp and pay when you pick up or receive delivery.
                     </div>
                     <div class="form-group full-width">
                         <label for="special_instructions">Special Instructions</label>
@@ -218,6 +222,9 @@
                             <div class="message-text">
                                 <h4>Order Placed Successfully!</h4>
                                 <p class="success-details"></p>
+                                <div id="whatsappAction" style="display:none; margin-top: 12px;">
+                                    <a id="whatsappConfirmBtn" href="#" target="_blank" class="btn btn-success btn-sm">Confirm on WhatsApp</a>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -231,6 +238,36 @@
     </div>
 
     <style>
+    .menu-order {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 12px;
+    }
+
+    .btn-favorite {
+        background: #fff;
+        border: 1px solid #dee2e6;
+        color: #c0392b;
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+    }
+
+    .btn-favorite.active {
+        background: #c0392b;
+        color: #fff;
+        border-color: #c0392b;
+    }
+
+    .btn-order {
+        flex: 1;
+    }
+
     /* Cart Button Styles */
     .cart-button-container {
         position: fixed;
@@ -748,21 +785,21 @@
 
     function placeOrder() {
         const form = document.getElementById('orderForm');
-        const customerName = document.getElementById('customer_name').value.trim();
-        const customerPhone = document.getElementById('customer_phone').value.trim();
-        const customerEmail = document.getElementById('customer_email').value.trim();
-        const orderType = document.getElementById('order_type').value;
-        const paymentMethod = document.getElementById('payment_method').value;
+        const isLoggedIn = window.customerAccount && window.customerAccount.logged_in;
+        const customerName = isLoggedIn ? window.customerAccount.customer.name : document.getElementById('customer_name').value.trim();
+        const customerPhone = isLoggedIn ? window.customerAccount.customer.phone : document.getElementById('customer_phone').value.trim();
+        const customerEmail = isLoggedIn ? window.customerAccount.customer.email : document.getElementById('customer_email').value.trim();
+        const orderType = isLoggedIn
+            ? document.getElementById('order_type_logged_in').value
+            : document.getElementById('order_type').value;
         const specialInstructions = document.getElementById('special_instructions').value.trim();
         const deliveryAddress = document.getElementById('delivery_address').value.trim();
         
-        // Validation
-        if (!customerName || !customerPhone || !customerEmail) {
-            showNotification('Please fill in all required fields.');
+        if (!isLoggedIn && (!customerName || !customerPhone || !customerEmail)) {
+            showNotification('Please fill in all required fields or sign in.');
             return;
         }
         
-        // Validate delivery address if order type is delivery
         if (orderType === 'delivery' && !deliveryAddress) {
             showNotification('Delivery address is required for delivery orders.');
             return;
@@ -773,46 +810,33 @@
             return;
         }
         
-        // Hide messages
         document.getElementById('loadingMessage').style.display = 'none';
         document.getElementById('errorMessage').style.display = 'none';
         document.getElementById('successMessage').style.display = 'none';
-        
-        // Show loading
+        document.getElementById('whatsappAction').style.display = 'none';
         document.getElementById('loadingMessage').style.display = 'block';
         
-        // Prepare order data in the format expected by process_order.php
         const formData = new FormData();
-        formData.append('name', customerName);
-        formData.append('phone', customerPhone);
-        formData.append('email', customerEmail);
+        if (!isLoggedIn) {
+            formData.append('name', customerName);
+            formData.append('phone', customerPhone);
+            formData.append('email', customerEmail);
+        }
         formData.append('order_type', orderType);
-        formData.append('payment_method', paymentMethod);
         formData.append('special_instructions', specialInstructions);
         
-        // Add delivery address if order type is delivery
         if (orderType === 'delivery') {
             formData.append('delivery_address', deliveryAddress);
         }
         
-        // Add cart items as arrays
-        const menuItemIds = [];
-        const quantities = [];
-        const unitPrices = [];
-        
         cart.forEach(item => {
-            menuItemIds.push(item.menu_item_id);
-            quantities.push(item.quantity);
-            unitPrices.push(item.price);
+            formData.append('menu_item_id[]', item.menu_item_id);
+            formData.append('quantity[]', item.quantity);
+            formData.append('unit_price[]', item.price);
+            formData.append('item_name[]', item.name);
         });
         
-        // Append arrays to FormData
-        menuItemIds.forEach(id => formData.append('menu_item_id[]', id));
-        quantities.forEach(qty => formData.append('quantity[]', qty));
-        unitPrices.forEach(price => formData.append('unit_price[]', price));
-        
-        // Submit order
-        fetch('services/order/process_order.php', {
+        fetch((window.SITE_BASE || '') + '/services/order/process_order.php', {
             method: 'POST',
             body: formData
         })
@@ -821,20 +845,26 @@
             document.getElementById('loadingMessage').style.display = 'none';
             
             if (data.success) {
-                document.getElementById('successMessage').querySelector('.success-details').textContent = data.message;
+                let successText = data.message;
+                if (data.email_sent) {
+                    successText += ' A confirmation email has been sent.';
+                }
+                document.getElementById('successMessage').querySelector('.success-details').textContent = successText;
                 document.getElementById('successMessage').style.display = 'block';
+
+                if (data.whatsapp_url) {
+                    const whatsappBtn = document.getElementById('whatsappConfirmBtn');
+                    whatsappBtn.href = data.whatsapp_url;
+                    document.getElementById('whatsappAction').style.display = 'block';
+                }
                 
-                // Clear cart and form
                 cart = [];
                 updateCartDisplay();
                 form.reset();
                 updateOrderSummary();
-                
-                // Close modal after 3 seconds
-                setTimeout(() => {
-                    closeCartModal();
-                    document.getElementById('successMessage').style.display = 'none';
-                }, 3000);
+                if (window.applyCheckoutAccountState) {
+                    window.applyCheckoutAccountState();
+                }
             } else {
                 document.getElementById('errorMessage').querySelector('.error-details').textContent = data.message;
                 document.getElementById('errorMessage').style.display = 'block';
@@ -848,7 +878,6 @@
             document.getElementById('loadingMessage').style.display = 'none';
             document.getElementById('errorMessage').querySelector('.error-details').textContent = 'An error occurred. Please try again.';
             document.getElementById('errorMessage').style.display = 'block';
-            
             console.error('Error:', error);
             
             setTimeout(() => {

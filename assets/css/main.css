@@ -310,6 +310,123 @@ h6 {
   --background-color: rgba(21, 17, 13, 0.85);
 }
 
+/* Inner pages always use a solid header (login, account, register) */
+body.inner-page .header {
+  --background-color: rgba(21, 17, 13, 0.95);
+  box-shadow: 0 2px 15px rgba(0, 0, 0, 0.15);
+}
+
+body.inner-page .header .topbar,
+body.inner-page .header .branding {
+  background-color: transparent;
+}
+
+/* Auth nav buttons */
+@media (min-width: 1200px) {
+  .navmenu .nav-auth-item {
+    margin-left: 6px;
+  }
+
+  .navmenu .nav-auth-btn {
+    padding: 8px 18px !important;
+    border-radius: 50px;
+    font-weight: 600 !important;
+    font-size: 13px !important;
+    border: 2px solid transparent;
+    line-height: 1.2;
+    transition: all 0.3s ease;
+  }
+
+  .navmenu .nav-auth-btn-signin {
+    color: #ffffff !important;
+    border-color: rgba(255, 255, 255, 0.75);
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .navmenu .nav-auth-btn-signin:hover {
+    color: #ffffff !important;
+    background: rgba(255, 255, 255, 0.18);
+    border-color: #ffffff;
+  }
+
+  .navmenu .nav-auth-btn-register {
+    color: #ffffff !important;
+    background: var(--accent-color);
+    border-color: var(--accent-color);
+  }
+
+  .navmenu .nav-auth-btn-register:hover {
+    color: #ffffff !important;
+    background: color-mix(in srgb, var(--accent-color), #000 12%);
+    border-color: color-mix(in srgb, var(--accent-color), #000 12%);
+  }
+
+  .navmenu .nav-auth-btn-account {
+    color: var(--accent-color) !important;
+    border-color: var(--accent-color);
+    background: transparent;
+  }
+
+  .navmenu .nav-auth-btn-account:hover {
+    color: #ffffff !important;
+    background: var(--accent-color);
+  }
+
+  .navmenu .nav-auth-btn-logout {
+    color: #ffffff !important;
+    background: #c0392b;
+    border-color: #c0392b;
+  }
+
+  .navmenu .nav-auth-btn-logout:hover {
+    color: #ffffff !important;
+    background: #a93226;
+    border-color: #a93226;
+  }
+
+  .scrolled .navmenu .nav-auth-btn-signin,
+  body.inner-page .navmenu .nav-auth-btn-signin {
+    color: #ffffff !important;
+    border-color: rgba(255, 255, 255, 0.75);
+  }
+}
+
+@media (max-width: 1199px) {
+  .navmenu .nav-auth-btn {
+    margin: 8px 20px;
+    padding: 12px 20px !important;
+    border-radius: 50px;
+    font-weight: 600 !important;
+    text-align: center;
+    justify-content: center;
+    border: 2px solid transparent;
+  }
+
+  .navmenu .nav-auth-btn-signin {
+    color: var(--heading-color) !important;
+    border-color: var(--accent-color);
+    background: transparent;
+  }
+
+  .navmenu .nav-auth-btn-register {
+    color: #ffffff !important;
+    background: var(--accent-color);
+    border-color: var(--accent-color);
+  }
+
+  .navmenu .nav-auth-btn-account {
+    color: var(--accent-color) !important;
+    border-color: var(--accent-color);
+    background: transparent;
+  }
+
+  .navmenu .nav-auth-btn-logout {
+    color: #ffffff !important;
+    background: #c0392b;
+    border-color: #c0392b;
+  }
+}
+
 /*--------------------------------------------------------------
 # Navigation Menu
 --------------------------------------------------------------*/
