@@ -1,6 +1,6 @@
 <?php
-require_once '../../../config/config.php';
-session_start();
+require_once __DIR__ . '/../auth/service_guard.php';
+requireServiceRoles([ROLE_ADMIN]);
 
 function setSuccessMessage($message)
 {

@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/../../config/roles.php';
+
 if (session_status() === PHP_SESSION_NONE) session_start();
 
 // Initialize variables
@@ -10,9 +12,11 @@ $report_clerk_role = defined('ROLE_STOCK_CLERK') ? ROLE_STOCK_CLERK : 'stock_cle
 $user_role = $_SESSION['user_role'] ?? $report_admin_role;
 $is_admin = $user_role === $report_admin_role;
 $is_clerk = $user_role === $report_clerk_role;
-$allowed_report_tabs = function_exists('report_tabs_for_role')
-    ? report_tabs_for_role($user_role)
-    : ['overview', 'stock', 'movements', 'loss', 'performance', 'customers'];
+$allowed_report_tabs = report_tabs_for_role($user_role);
+if (empty($allowed_report_tabs)) {
+    echo '<div class="alert alert-warning">You do not have permission to view reports.</div>';
+    return;
+}
 $default_report_tab = $allowed_report_tabs[0] ?? 'overview';
 $tab_labels = [
     'overview' => 'Overview',

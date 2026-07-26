@@ -1,24 +1,16 @@
 <?php
-// Include database connection
-include '../../../config/config.php';
+require_once __DIR__ . '/../auth/service_guard.php';
+require_once __DIR__ . '/../../../config/roles.php';
 
-// Set content type to JSON
+$user = ensureServiceSession();
 header('Content-Type: application/json');
 
-// Enable error reporting for debugging
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
-
-// Get POST data
 $json = file_get_contents('php://input');
-$data = json_decode($json, true);
-
-// Log incoming data for debugging
-error_log("Dashboard API Request: " . $json);
+$data = json_decode($json, true) ?? [];
 
 $start_date = $data['start_date'] ?? date('Y-m-d');
 $end_date = $data['end_date'] ?? date('Y-m-d');
-$user_role = $data['user_role'] ?? 'admin';
+$user_role = $user->role;
 
 try {
     // Initialize response array

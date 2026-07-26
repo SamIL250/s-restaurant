@@ -1,7 +1,11 @@
 <?php
 session_start();
 include './config/config.php';
+include './config/roles.php';
 include './src/services/auth/auth-state.php';
+
+$current_user = checkAuthState();
+enforcePageAccess();
 ?>
 
 <!DOCTYPE html>

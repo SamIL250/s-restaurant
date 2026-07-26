@@ -27,10 +27,8 @@ if (session_status() === PHP_SESSION_NONE) session_start();
     $role_counts = [
         'all' => 0,
         'admin' => 0,
-        'manager' => 0,
         'cashier' => 0,
-        'kitchen' => 0,
-        'waiter' => 0
+        'stock_clerk' => 0,
     ];
     $staff_count_query = mysqli_query($conn, "SELECT role, COUNT(*) as cnt FROM users WHERE deleted_at IS NULL GROUP BY role");
     while ($row = mysqli_fetch_assoc($staff_count_query)) {
@@ -55,23 +53,13 @@ if (session_status() === PHP_SESSION_NONE) session_start();
             </a>
         </li>
         <li class="nav-item">
-            <a class="nav-link" data-filter="manager" href="#">
-                Manager <span class="text-body-tertiary fw-semibold">(<?= $role_counts['manager'] ?>)</span>
-            </a>
-        </li>
-        <li class="nav-item">
             <a class="nav-link" data-filter="cashier" href="#">
                 Cashier <span class="text-body-tertiary fw-semibold">(<?= $role_counts['cashier'] ?>)</span>
             </a>
         </li>
         <li class="nav-item">
-            <a class="nav-link" data-filter="kitchen" href="#">
-                Kitchen <span class="text-body-tertiary fw-semibold">(<?= $role_counts['kitchen'] ?>)</span>
-            </a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link" data-filter="waiter" href="#">
-                Waiter <span class="text-body-tertiary fw-semibold">(<?= $role_counts['waiter'] ?>)</span>
+            <a class="nav-link" data-filter="stock_clerk" href="#">
+                Stock Clerk <span class="text-body-tertiary fw-semibold">(<?= $role_counts['stock_clerk'] ?>)</span>
             </a>
         </li>
         <li class="nav-item">
@@ -101,12 +89,7 @@ if (session_status() === PHP_SESSION_NONE) session_start();
                 while ($row = mysqli_fetch_assoc($staff_query)) {
                     $has_staff = true;
                     $full_name = trim($row['first_name'] . ' ' . $row['last_name']);
-                    $role_badge = '<span class="badge badge-soft-' . 
-                        ($row['role'] == 'admin' ? 'danger' : 
-                        ($row['role'] == 'manager' ? 'warning' : 
-                        ($row['role'] == 'cashier' ? 'info' : 
-                        ($row['role'] == 'kitchen' ? 'secondary' : 'primary')))) . '">' . 
-                        ucfirst($row['role']) . '</span>';
+                    $role_badge = '<span class="badge badge-soft-' . role_badge_class($row['role']) . '">' . role_label($row['role']) . '</span>';
                     $status_badge = $row['is_active'] ? 
                         '<span class="badge bg-success-subtle text-success">Active</span>' : 
                         '<span class="badge bg-secondary-subtle text-secondary">Inactive</span>';
@@ -210,7 +193,8 @@ if (session_status() === PHP_SESSION_NONE) session_start();
                                     </div>
                                     <div class="mb-3">
                                         <label class="form-label">New Password (leave blank to keep current)</label>
-                                        <input type="password" class="form-control" name="password">
+                                        <input type="password" class="form-control" name="password" minlength="6">
+                                        <small class="text-muted">Minimum 6 characters when changing password.</small>
                                     </div>
                                 </div>
                                 <div class="modal-footer">
@@ -277,7 +261,9 @@ if (session_status() === PHP_SESSION_NONE) session_start();
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Password</label>
-                        <input type="password" class="form-control" name="password" required>
+                        <input type="password" class="form-control" name="password" minlength="6" required>
+                        <small class="text-muted">Minimum 6 characters. Stored securely as a hash.</small>
+                    </div>
                     </div>
                 </div>
                 <div class="modal-footer">

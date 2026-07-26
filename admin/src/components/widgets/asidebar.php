@@ -1,5 +1,10 @@
 <?php
     $current_page = basename($_SERVER['PHP_SELF']);
+    $nav_role = currentUserRole();
+
+    $showNav = static function (string $section) use ($nav_role): bool {
+        return role_can_access_section($nav_role, $section);
+    };
 ?>
 
 <nav class="navbar navbar-vertical navbar-expand-lg" style="display:none;">
@@ -27,10 +32,13 @@
                 </li>
                 <li class="nav-item">
                     <!-- label-->
+                    <?php if ($showNav('inventory') || $showNav('menu') || $showNav('reservations') || $showNav('orders') || $showNav('purchase')): ?>
                     <p class="navbar-vertical-label">Restaurant Management</p>
                     <hr class="navbar-vertical-line" />
+                    <?php endif; ?>
                     
                     <!-- Inventory Management Section -->
+                    <?php if ($showNav('inventory')): ?>
                     <div class="nav-item-wrapper"><a class="nav-link dropdown-indicator label-1" href="#nv-inventory" role="button" data-bs-toggle="collapse" aria-expanded="false" aria-controls="nv-inventory">
                             <div class="d-flex align-items-center">
                                 <div class="dropdown-indicator-icon-wrapper"><span class="fas fa-caret-right dropdown-indicator-icon"></span></div><span class="nav-link-icon"><span data-feather="package"></span></span><span class="nav-link-text">Inventory</span>
@@ -57,8 +65,10 @@
                             </ul>
                         </div>
                     </div>
+                    <?php endif; ?>
 
                     <!-- Menu Management Section -->
+                    <?php if ($showNav('menu')): ?>
                     <div class="nav-item-wrapper"><a class="nav-link dropdown-indicator label-1" href="#nv-menu" role="button" data-bs-toggle="collapse" aria-expanded="false" aria-controls="nv-menu">
                             <div class="d-flex align-items-center">
                                 <div class="dropdown-indicator-icon-wrapper"><span class="fas fa-caret-right dropdown-indicator-icon"></span></div><span class="nav-link-icon"><span data-feather="book-open"></span></span><span class="nav-link-text">Menu</span>
@@ -81,8 +91,10 @@
                             </ul>
                         </div>
                     </div>
+                    <?php endif; ?>
 
                     <!-- Reservations Section -->
+                    <?php if ($showNav('reservations')): ?>
                     <div class="nav-item-wrapper"><a class="nav-link dropdown-indicator label-1" href="#nv-reservations" role="button" data-bs-toggle="collapse" aria-expanded="false" aria-controls="nv-reservations">
                             <div class="d-flex align-items-center">
                                 <div class="dropdown-indicator-icon-wrapper"><span class="fas fa-caret-right dropdown-indicator-icon"></span></div><span class="nav-link-icon"><span data-feather="calendar"></span></span><span class="nav-link-text">Reservations</span>
@@ -105,8 +117,10 @@
                             </ul>
                         </div>
                     </div>
+                    <?php endif; ?>
 
                     <!-- Orders Section -->
+                    <?php if ($showNav('orders')): ?>
                     <div class="nav-item-wrapper"><a class="nav-link dropdown-indicator label-1" href="#nv-orders" role="button" data-bs-toggle="collapse" aria-expanded="false" aria-controls="nv-orders">
                             <div class="d-flex align-items-center">
                                 <div class="dropdown-indicator-icon-wrapper"><span class="fas fa-caret-right dropdown-indicator-icon"></span></div><span class="nav-link-icon"><span data-feather="shopping-cart"></span></span><span class="nav-link-text">Orders</span>
@@ -125,8 +139,10 @@
                             </ul>
                         </div>
                     </div>
+                    <?php endif; ?>
 
                     <!-- Purchase Orders Section -->
+                    <?php if ($showNav('purchase')): ?>
                     <div class="nav-item-wrapper"><a class="nav-link dropdown-indicator label-1" href="#nv-purchase" role="button" data-bs-toggle="collapse" aria-expanded="false" aria-controls="nv-purchase">
                             <div class="d-flex align-items-center">
                                 <div class="dropdown-indicator-icon-wrapper"><span class="fas fa-caret-right dropdown-indicator-icon"></span></div><span class="nav-link-icon"><span data-feather="truck"></span></span><span class="nav-link-text">Purchase Orders</span>
@@ -141,8 +157,10 @@
                             </ul>
                         </div>
                     </div>
+                    <?php endif; ?>
 
                     <!-- Management Section -->
+                    <?php if ($showNav('customers') || $showNav('staff')): ?>
                     <p class="navbar-vertical-label mt-3">Management</p>
                     <hr class="navbar-vertical-line" />
                     
@@ -153,19 +171,25 @@
                         </a>
                         <div class="parent-wrapper label-1">
                             <ul class="nav collapse parent" data-bs-parent="#navbarVerticalCollapse" id="nv-management">
+                                <?php if ($showNav('customers')): ?>
                                 <li class="nav-item"><a class="nav-link <?php echo $current_page == 'customers.php' ? "active" : ""  ?>" href="customers">
                                         <div class="d-flex align-items-center"><span class="nav-link-text">Customers</span></div>
                                     </a>
                                 </li>
+                                <?php endif; ?>
+                                <?php if ($showNav('staff')): ?>
                                 <li class="nav-item"><a class="nav-link <?php echo $current_page == 'staff.php' ? "active" : ""  ?>" href="staff">
                                         <div class="d-flex align-items-center"><span class="nav-link-text">Staff</span></div>
                                     </a>
                                 </li>
+                                <?php endif; ?>
                             </ul>
                         </div>
                     </div>
+                    <?php endif; ?>
 
                     <!-- Promotions Section -->
+                    <?php if ($showNav('promotions')): ?>
                     <div class="nav-item-wrapper"><a class="nav-link dropdown-indicator label-1" href="#nv-promotions" role="button" data-bs-toggle="collapse" aria-expanded="false" aria-controls="nv-promotions">
                             <div class="d-flex align-items-center">
                                 <div class="dropdown-indicator-icon-wrapper"><span class="fas fa-caret-right dropdown-indicator-icon"></span></div><span class="nav-link-icon"><span data-feather="gift"></span></span><span class="nav-link-text">Promotions</span>
@@ -181,8 +205,10 @@
                             </ul>
                         </div>
                     </div>
+                    <?php endif; ?>
 
                     <!-- Reports Section -->
+                    <?php if ($showNav('reports')): ?>
                     <div class="nav-item-wrapper"><a class="nav-link dropdown-indicator label-1" href="#nv-reports" role="button" data-bs-toggle="collapse" aria-expanded="false" aria-controls="nv-reports">
                             <div class="d-flex align-items-center">
                                 <div class="dropdown-indicator-icon-wrapper"><span class="fas fa-caret-right dropdown-indicator-icon"></span></div><span class="nav-link-icon"><span data-feather="bar-chart-2"></span></span><span class="nav-link-text">Reports</span>
@@ -198,6 +224,7 @@
                             </ul>
                         </div>
                     </div>
+                    <?php endif; ?>
                 </li>
             </ul>
         </div>

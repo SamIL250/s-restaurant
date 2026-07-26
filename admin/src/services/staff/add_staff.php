@@ -1,13 +1,6 @@
 <?php
-require_once '../../../config/config.php';
-session_start();
-
-// Enable error reporting for debugging
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
-
-// Debug: Log all POST data
-error_log("Add Staff POST Data: " . print_r($_POST, true));
+require_once __DIR__ . '/../auth/service_guard.php';
+requireServiceRoles([ROLE_ADMIN]);
 
 function setSuccessMessage($message)
 {
@@ -27,11 +20,6 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     setErrorMessage('Invalid request method.');
 }
 
-// Check if user is logged in and is admin
-if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'admin') {
-    setErrorMessage('Only administrators can add staff members.');
-}
-
 $username = trim($_POST['username'] ?? '');
 $email = trim($_POST['email'] ?? '');
 $password = $_POST['password'] ?? '';
@@ -44,14 +32,19 @@ if (empty($username) || empty($email) || empty($password) || empty($first_name) 
     setErrorMessage('All fields are required.');
 }
 
-// Validate role - must match database ENUM values
-$valid_roles = ['admin', 'cashier', 'stock_clerk'];
-if (!in_array($role, $valid_roles)) {
+if (!is_valid_role($role)) {
     setErrorMessage('Invalid role selected. Allowed roles: admin, cashier, stock_clerk');
 }
 
-// Check for duplicate username
-$stmt = $conn->prepare('SELECT user_id FROM users WHERE username = ?');
+if (strlen($password) < 6) {
+    setErrorMessage('Password must be at least 6 characters.');
+}
+
+if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    setErrorMessage('Invalid email format.');
+}
+
+$stmt = $conn->prepare('SELECT user_id FROM users WHERE username = ? AND deleted_at IS NULL');
 $stmt->bind_param('s', $username);
 $stmt->execute();
 $stmt->store_result();
@@ -61,8 +54,7 @@ if ($stmt->num_rows > 0) {
 }
 $stmt->close();
 
-// Check for duplicate email
-$stmt = $conn->prepare('SELECT user_id FROM users WHERE email = ?');
+$stmt = $conn->prepare('SELECT user_id FROM users WHERE email = ? AND deleted_at IS NULL');
 $stmt->bind_param('s', $email);
 $stmt->execute();
 $stmt->store_result();
@@ -72,23 +64,17 @@ if ($stmt->num_rows > 0) {
 }
 $stmt->close();
 
-// Store password as plain text (no hashing)
-$password_plain = $password;
-
-// Debug: Log before insert
-error_log("About to insert staff: username='$username', email='$email', role='$role'");
+$password_hash = hashUserPassword($password);
 
 $stmt = $conn->prepare('INSERT INTO users (username, email, password_hash, first_name, last_name, role, phone) VALUES (?, ?, ?, ?, ?, ?, ?)');
 if (!$stmt) {
-    error_log("Prepare failed: " . $conn->error);
     setErrorMessage('Database prepare error.');
 }
 
-$stmt->bind_param('sssssss', $username, $email, $password_plain, $first_name, $last_name, $role, $phone);
+$stmt->bind_param('sssssss', $username, $email, $password_hash, $first_name, $last_name, $role, $phone);
 if (!$stmt->execute()) {
-    error_log("Execute failed: " . $stmt->error);
     $stmt->close();
     setErrorMessage('Failed to add staff member: ' . $stmt->error);
 }
 $stmt->close();
-setSuccessMessage('Staff member added successfully.'); 
+setSuccessMessage('Staff member added successfully.');

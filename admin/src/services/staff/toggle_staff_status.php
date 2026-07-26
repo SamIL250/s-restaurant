@@ -1,5 +1,7 @@
 <?php
-require_once '../../../config/config.php';
+require_once __DIR__ . '/../auth/service_guard.php';
+requireServiceRoles([ROLE_ADMIN]);
+
 header('Content-Type: application/json');
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -13,13 +15,12 @@ if ($user_id <= 0) {
     exit;
 }
 
-// Prevent deactivating self
-if ($user_id == $_SESSION['user_id'] ?? 0) {
+if ($user_id == ($_SESSION['user_id'] ?? 0)) {
     echo json_encode(['success' => false, 'message' => 'You cannot deactivate your own account.']);
     exit;
 }
 
-$stmt = $conn->prepare('UPDATE users SET is_active = NOT is_active WHERE user_id = ?');
+$stmt = $conn->prepare('UPDATE users SET is_active = NOT is_active WHERE user_id = ? AND deleted_at IS NULL');
 $stmt->bind_param('i', $user_id);
 if ($stmt->execute()) {
     echo json_encode(['success' => true, 'message' => 'Staff status updated successfully.']);
@@ -27,4 +28,3 @@ if ($stmt->execute()) {
     echo json_encode(['success' => false, 'message' => 'Failed to update staff status.']);
 }
 $stmt->close();
-$conn->close(); 

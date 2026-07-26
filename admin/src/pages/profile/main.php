@@ -44,8 +44,8 @@ if (!$user_data) {
                             <h3 class="mb-1"><?php echo htmlspecialchars($user_data['first_name'] . ' ' . $user_data['last_name']); ?></h3>
                             <p class="text-muted mb-2"><?php echo htmlspecialchars($user_data['email']); ?></p>
                             <div class="d-flex gap-2">
-                                <span class="badge badge-soft-<?php echo $user_role === 'admin' ? 'primary' : ($user_role === 'cashier' ? 'info' : 'warning'); ?>">
-                                    <?php echo ucfirst($user_role); ?>
+                                <span class="badge badge-soft-<?php echo role_badge_class($user_role); ?>">
+                                    <?php echo role_label($user_role); ?>
                                 </span>
                                 <span class="badge badge-soft-success">
                                     <?php echo $user_data['is_active'] ? 'Active' : 'Inactive'; ?>

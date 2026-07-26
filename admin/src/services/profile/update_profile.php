@@ -1,6 +1,6 @@
 <?php
-require_once '../../../config/config.php';
-session_start();
+require_once __DIR__ . '/../auth/service_guard.php';
+requireServiceRoles([ROLE_ADMIN, ROLE_CASHIER, ROLE_STOCK_CLERK]);
 
 function setSuccessMessage($message)
 {
@@ -107,12 +107,12 @@ if (!empty($_POST['new_password'])) {
     $user = $result->fetch_assoc();
     $stmt->close();
 
-    if ($current_password !== $user['password_hash']) {
+    if (!verifyUserPassword($current_password, $user['password_hash'])) {
         setErrorMessage('Current password is incorrect.');
     }
 
     $password_update = ', password_hash = ?';
-    $password_params[] = $new_password;
+    $password_params[] = hashUserPassword($new_password);
     $param_types .= 's';
 }
 

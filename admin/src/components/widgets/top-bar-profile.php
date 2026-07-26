@@ -6,7 +6,7 @@
                     <img class="rounded-circle" src="src/assets/img/icons/profile.png" alt="" />
                 </div>
                 <h6 class="mt-2 text-body-emphasis"><?php echo $_SESSION['user_name']; ?></h6>
-                <p class="text-body-secondary mb-0"><?php echo ucfirst($_SESSION['user_role']); ?></p>
+                <p class="text-body-secondary mb-0"><?php echo role_label(currentUserRole()); ?></p>
             </div>
 
         </div>
