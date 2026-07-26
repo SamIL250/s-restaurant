@@ -1,6 +1,5 @@
 <?php
-include './config/connection.php';
-include './config/app.php';
+include './config/config.php';
 require_once dirname(__DIR__) . '/services/auth/CustomerSession.php';
 CustomerSession::start();
 $currentCustomer = CustomerSession::user();

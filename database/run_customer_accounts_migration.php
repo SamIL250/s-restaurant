@@ -1,5 +1,5 @@
 <?php
-require dirname(__DIR__) . '/config/connection.php';
+require dirname(__DIR__) . '/config/config.php';
 
 if (!$conn) {
     fwrite(STDERR, "No DB connection\n");
